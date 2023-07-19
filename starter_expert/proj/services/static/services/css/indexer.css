@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&family=Oswald:wght@500&family=Poppins:wght@500&display=swap');
+
+body {
+    font-family: 'Montserrat', sans-serif;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgb(239,239,239);
+}
+
+td, th {
+    padding: 1rem;
+    
+}
+
+th {
+    text-align: left;
+    font-size: 20px;
+}

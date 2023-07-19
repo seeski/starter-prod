@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Кабинет</title>
+      {% load static %}
+    <link rel="stylesheet" href="{% static 'services/css/cabinet.css' %}">
+</head>
+<body>
+<div class="tool-container">
+    <h1 class="title">Здравствуйте! Выберите инструмент:</h1>
+    <p class="link-container"><a href="{% url 'indexer' %}">Индексатор</a></p>
+    <p class="link-container"><a href="#">SEO-бот</a></p>
+    <p class="link-container"><a href="#">Checker-бот</a></p>
+    <p class="link-container"><a href="#">Еще ссылка :)</a></p>
+</div>
+</body>
+</html>
