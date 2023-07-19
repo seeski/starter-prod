@@ -12,11 +12,14 @@ from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
+
+# лк со всеми инструментами
 @login_required(login_url='login')
 def cabinet(request):
-
     return render(request, 'services/cabinet.html', {})
 
+
+# страница с индексатором
 @login_required(login_url='login')
 def indexer(request):
     user_id = request.user.id
@@ -37,9 +40,10 @@ def indexer(request):
     paginator = Paginator(reports, 25)
     page_number = request.GET.get('page')
     page_content = paginator.get_page(page_number)
-    return render(request, 'services/indexer.html', {'form': form, 'page_content': page_content })
+    return render(request, 'services/indexer.html', {'form': form, 'page_content': page_content})
 
 
+# вьюха для скачивания файла по определенному отчету
 @login_required(login_url='login')
 def download_report(request, report_id):
     # запрос с бд, чтобы узнать nmid по этому report_id

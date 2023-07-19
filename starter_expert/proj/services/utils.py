@@ -11,7 +11,6 @@ CURRENT_DIR = Path(__file__).resolve().parent
 def normalize_text(text: str) -> str:
     morph = MorphAnalyzer()
     words = re.sub(r'[^\w\s]', '', text).split(' ')
-    print(len(words))
     normalized_words = []
     for word in words:
         normalized_word = morph.parse(word)[0].normal_form
@@ -101,6 +100,7 @@ class FileOperator:
 # класс предназначен для работы с ссылками
 # содержит набор статичных ссылок и шаблонов для использования api вайлдберрис
 class URLOperator:
+
     query_categories_url_template = 'https://search.wb.ru/exactmatch/ru/common/v4/search?TestGroup=test_2&TestID=131&appType=1&curr=rub&dest=123586150&filters=xsubject&query={}&regions=80,38,4,64,83,33,68,70,69,30,86,40,1,66,110,22,31,48,71,114&resultset=filters&spp=0'
     subject_base_url = 'https://static-basket-01.wb.ru/vol0/data/subject-base.json'
     card_url_template = 'https://basket-replace_me.wb.ru/vol{}/part{}/{}/info/ru/card.json'
@@ -211,7 +211,7 @@ class DataCollector:
             print(e, url)
             return ''
 
-
+    # сбор id бренда
     def get_brand_id(self, url):
         try:
             resp = requests.get(url).json()
@@ -356,7 +356,8 @@ class DataCollector:
             return 'Error during category getting'
 
 
-    def get_detail_info(self, url):
+    #
+    def get_brand_and_name(self, url):
         try:
             resp = requests.get(url).json()
             product = resp['data']['products'][0]
@@ -443,13 +444,13 @@ class Indexer:
         card_url = self.url_operator.create_card_url(self.nmid)
         detail_card_url = self.url_operator.create_nmid_detail_url(self.nmid)
         card_info = self.data_collector.get_card_info(url=card_url)
-        detail_info = self.data_collector.get_detail_info(detail_card_url)
+        detail_info = self.data_collector.get_brand_and_name(detail_card_url)
         full_info = ' '.join([card_info, detail_info])
         self.checker = Checker(self.nmid, full_info)
         self.resulted_queries = filter(self.checker.check_desc, reader)
 
 
-    def __get_supplier_id(self):
+    def __get_brand_id(self):
         detail_url = self.url_operator.create_nmid_detail_url(self.nmid)
         return self.data_collector.get_brand_id(detail_url)
 
@@ -463,9 +464,9 @@ class Indexer:
 
 
     # сущетвует/не существует товар в выдаче по запросу
-    def __get_query_by_brand(self, query):
-        supplier_id = self.__get_supplier_id()
-        url = self.url_operator.create_filtered_by_brand_url(query=query, brand_id=supplier_id)
+    def __get_existence(self, query):
+        brand_id = self.__get_brand_id()
+        url = self.url_operator.create_filtered_by_brand_url(query=query, brand_id=brand_id)
         brand_products = self.data_collector.get_query_by_brand(url)
         existence = self.checker.check_existence(brand_products)
         return existence
@@ -481,7 +482,7 @@ class Indexer:
         }
 
     # проверка первых 10 страниц выдачи
-    def __check_ten_pages(self, query):
+    def __get_place(self, query):
         url = self.url_operator.create_query_url_template(query=query)
         products = self.data_collector.get_query(url)
         place = self.checker.checkFirstTenPages(products)
@@ -506,25 +507,34 @@ class Indexer:
     # заключительный метод-генератор, возвращает словарь со всеми необходимыми данными
     def iterate_queries(self):
         for query in self.resulted_queries:
+
             keywords = query[0]
             frequency = query[1]
             top_category = self.__getTopCategory(keywords)
             req_depth = self.__get_req_depth(keywords)
-            existence = self.__get_query_by_brand(keywords)
+            existence = self.__get_existence(keywords)
+
+            # если товар есть в поисковой выдаче, то собираем данные по рекламе, месту и топу выдачи
             if existence:
                 ad_info = self.__get_ad_info(keywords)
                 ad_spots = ad_info['ad_spots']
                 ad_place = ad_info['ad_place']
-                place = self.__check_ten_pages(keywords)
+                place = self.__get_place(keywords)
+                # __get_ad_info возвращает 0, если товар не в первой 1000 товаров
+                # если товару присвоено место, то считаем процент
                 if place and req_depth != 0:
                     percent = (place / req_depth) * 100
                     spot_req_depth = str(round(percent, 2)).replace('.', ';')
+
+                # если места нет, то и не считаем ниче
                 else:
                     spot_req_depth = place
 
+            # если товара вообще нет в поисковой выдаче, то ниче не счяитаем, везде None значения
             else:
                 ad_spots, ad_place, place, spot_req_depth = [None] * 4
 
+            # возвращаем словарь со всеми значения
             yield {
                 'nmid': self.nmid,
                 'top_category': top_category,
