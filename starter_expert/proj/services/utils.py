@@ -1,8 +1,9 @@
-import csv, time, requests, re, xlsxwriter, io, os
+import csv, time, requests, re, xlsxwriter, io, os, json, base64
 from pymorphy3 import MorphAnalyzer
 from openpyxl import Workbook, load_workbook
 from . import models
 from pathlib import Path
+
 
 CURRENT_DIR = Path(__file__).resolve().parent
 
@@ -17,6 +18,28 @@ def normalize_text(text: str) -> str:
         normalized_words.append(normalized_word)
 
     return ' '.join(normalized_words)
+
+
+# записывает все данные по каждому отчету в IndexerReportData
+def createReportData(report):
+    nmid = report.nmid
+
+    indexer = Indexer(nmid)
+    for query in indexer.iterate_queries():
+        models.IndexerReportData.objects.create(
+            priority_cat=query.get('top_category'),
+            keywords=query.get('keywords'),
+            frequency=query.get('frequency'),
+            req_depth=query.get('req_depth'),
+            existence=query.get('existence'),
+            place=query.get('place'),
+            spot_req_depth=query.get('spot_req_depth'),
+            ad_place=query.get('ad_place'),
+            report=report
+        )
+
+    report.ready = True
+    report.save()
 
 
 # класс для работы с файлами
@@ -93,7 +116,45 @@ class FileOperator:
         buffer.seek(0)
         return buffer
 
+    def getRequestsData(self):
 
+        # получаем ответ от вб с закодированными данными по миллиону топ запросов
+        # декодируем текст в человеческий
+        resp = requests.get('https://trending-searches.wb.ru/file?period=month').json()
+        enc_data = resp['data']['file']
+        data = base64.b64decode(enc_data).decode('utf-8')
+        queriesAsStrs = data.split('\n')
+
+        # проходимся по каждой строчке, предварительно сплитили по переносу
+        # роспаковываем на запрос и частоту
+        # создаем и добавляем словарь с распакованными данными и доп полем normalized_keywords (потребуется для другой ф-и)
+        quieriesAsDicts = []
+        for query in queriesAsStrs:
+            try:
+                # некоторые запросы содержат неразделительные запятые, например
+                # "постельное 1,5 бязь комплект",40
+                # делаем проверочку, далее создаем, добавляем словарь
+                if query.count(',') > 1:
+                    pre_keywords, frequency = query.split('",')
+                    keywords = pre_keywords.strip('"')
+                else:
+                    keywords, frequency = query.split(',')
+
+                quieriesAsDicts.append(
+                    {
+                        "keywords": keywords.replace('﻿', ''),
+                        "frequency": frequency,
+                        "normalized_keywords": ""
+                    }
+                )
+
+            except:
+                continue
+
+        # словарь в json дамп и в файл
+        dump = json.dumps(quieriesAsDicts, indent=4, ensure_ascii=False)
+        with open('requests.json', 'w', encoding='utf-8') as jsonFile:
+            jsonFile.write(dump)
 
 
 
@@ -356,7 +417,8 @@ class DataCollector:
             return 'Error during category getting'
 
 
-    #
+    # возвращает бренд и имя товара
+    # для более подробного описания текстовой части карточки
     def get_brand_and_name(self, url):
         try:
             resp = requests.get(url).json()
@@ -409,6 +471,8 @@ class Checker:
     def checkFirstTenPages(self, ids):
 
         if self.nmid in ids:
+            # индексация списков начинается с нуля
+            # поэтому для получения места выдачи +1
             return ids.index(self.nmid) + 1
 
         else:
@@ -431,7 +495,7 @@ class Indexer:
 
     # создаем нужные объекты классов, инициализируем nmid и seller id (нахуй потом сходит скорее всего этот сейлер id)
     # также сразу ищет совпадения среди запросов и описания товара
-    def __init__(self, nmid: str):
+    def __init__(self, nmid):
         self.nmid = nmid
         self.url_operator = URLOperator()
         self.data_collector = DataCollector()
@@ -441,15 +505,18 @@ class Indexer:
     def __search_common(self):
         file = open(os.path.join(CURRENT_DIR, 'requests.csv'), encoding='utf-8')
         reader = csv.reader(file)
+
         card_url = self.url_operator.create_card_url(self.nmid)
         detail_card_url = self.url_operator.create_nmid_detail_url(self.nmid)
+
         card_info = self.data_collector.get_card_info(url=card_url)
         detail_info = self.data_collector.get_brand_and_name(detail_card_url)
         full_info = ' '.join([card_info, detail_info])
+
         self.checker = Checker(self.nmid, full_info)
         self.resulted_queries = filter(self.checker.check_desc, reader)
 
-
+    # возвращает id бренда
     def __get_brand_id(self):
         detail_url = self.url_operator.create_nmid_detail_url(self.nmid)
         return self.data_collector.get_brand_id(detail_url)
@@ -538,7 +605,7 @@ class Indexer:
             yield {
                 'nmid': self.nmid,
                 'top_category': top_category,
-                'keyword': keywords,
+                'keywords': keywords,
                 'frequency': frequency,
                 'req_depth': req_depth,
                 'existence': existence,

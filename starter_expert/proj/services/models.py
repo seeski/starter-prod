@@ -1,7 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# Create your models here.
+
+# просто хранит все nmid для создания отчетов
+class NmidToBeReported(models.Model):
+
+    nmid = models.IntegerField(null=False, unique=True)
+    name = models.CharField(max_length=255)
+    url = models.URLField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name_plural = "NmidsToBeReported"
 
 
 # хранит данные об отчетах
@@ -10,12 +19,14 @@ from django.contrib.auth.models import User
 # поле ready показывает, созданы ли и укомплектованы ли данные по отчету в модели IndexerReportsData
 # поле user показывает какой пользователь подгрузил определнный nmid на создание отчета
 # для каждого пользователя доступны только созданные им отчеты
-class IndexerReports(models.Model):
+class IndexerReport(models.Model):
 
     nmid = models.IntegerField(null=False)
-    date = models.DateField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True)
     ready = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name_plural = "IndexerReports"
 
 
 #  хранит собранные данные по каждому отчету
@@ -30,9 +41,8 @@ class IndexerReports(models.Model):
 # ad_spots - кол-во рекламных мест
 # ad_place - место в рекламной выдаче
 # report_id - внешний ключ связывающий отчет с записью в
-class IndexerReportsData(models.Model):
+class IndexerReportData(models.Model):
 
-    nmid = models.IntegerField(null=False)
     priority_cat = models.CharField(max_length=255)
     keywords = models.CharField(max_length=255)
     frequency = models.IntegerField()
@@ -42,4 +52,6 @@ class IndexerReportsData(models.Model):
     spot_req_depth = models.CharField(null=True, default=None, max_length=255)
     ad_spots = models.IntegerField(null=True, default=None)
     ad_place = models.IntegerField(null=True, default=None)
-    report_id = models.ForeignKey(IndexerReports, null=False, on_delete=models.CASCADE)
+    report = models.ForeignKey(IndexerReport, null=False, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name_plural = 'IndexerReportsData'

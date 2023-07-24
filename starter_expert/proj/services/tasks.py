@@ -1,47 +1,49 @@
 from .utils import Indexer
 from celery import shared_task
-from .models import IndexerReportsData, IndexerReports
+from . import utils
+from .models import IndexerReportData, IndexerReport, NmidToBeReported
+from django.contrib.auth.models import User
 
-# эта таска собирает и записывает данные для определенного отчета из модели IndexerReports
+
+# таска для создание записи о определенном nmid
+# таска потому что обращаемся к апи вб
+# если nmid в подгружаемом файле будет много, то клиент будет долго ждать ответа
 @shared_task
-def create_report_data(nmid, report_id):
+def createNmidToReport(nmid, user_id):
+    nmid_url = f'https://www.wildberries.ru/catalog/{nmid}/detail.aspx'
+    user = User.objects.get(id=user_id)
+    urlOperator = utils.URLOperator()
+    dataCollector = utils.DataCollector()
 
-    # объект моделри IndexerReports, а не просто report_id, нужен
-    # чтобы передать его в качестве внешнего ключа в поле report_id модели IndexerReportsData
-    report = IndexerReports.objects.filter(id=report_id)[0]
-    indexer = Indexer(nmid)
-
-    # здесь просто пробегаемся по методу-итератору класса Indexer
-    # подробнее можно глянуть в utils
-    for data in indexer.iterate_queries():
-        priority_cat = data.get('top_category')
-        keywords = data.get('keyword')
-        frequency = data.get('frequency')
-        req_depth = data.get('req_depth')
-        existence = data.get('existence')
-        place = data.get("place")
-        spot_req_depth = data.get('spot_req_depth')
-        ad_spots = data.get('ad_spots')
-        ad_place = data.get('ad_place')
-
-        # создаем новую запись в модели из данных полученных генератором
-        data_obj = IndexerReportsData.objects.create(
+    detail_url = urlOperator.create_nmid_detail_url(nmid)
+    name = dataCollector.get_brand_and_name(detail_url)
+    # создание записи в модели обернул в try/except из-за значения unique=True
+    # если клиент случайно подгрузит уже существующий в таблице nmid, то поднимется ошибка
+    try:
+        NmidToBeReported.objects.create(
             nmid=nmid,
-            priority_cat=priority_cat,
-            keywords=keywords,
-            frequency=frequency,
-            req_depth=req_depth,
-            existence=existence,
-            place=place,
-            spot_req_depth=spot_req_depth,
-            ad_place=ad_place,
-            ad_spots=ad_spots,
-            report_id=report,
+            name=name,
+            url=nmid_url,
+            user=user
         )
 
-    # после того, как луп закончил свою работу, меняем флажок ready на значение True
-    # поле ready хранит значение о готовности отчета
-    # если значение True, то данные по отчету готовы и его можно скачивать
-    report = IndexerReports.objects.get(id=report_id)
-    report.ready = True
-    report.save()
+    except Exception as e:
+        print(e)
+
+
+#
+@shared_task
+def iterateNmids():
+    queries = NmidToBeReported.objects.all()
+    for query in queries:
+        report = IndexerReport.objects.create(
+            nmid=query.nmid,
+            user=query.user
+        )
+        utils.createReportData(report)
+
+
+    reports = IndexerReport.objects.filter(ready=False)
+
+    for report in reports:
+        utils.createReportData(report)

@@ -33,6 +33,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
 
     command: 'sh -c "cd src && gunicorn proj.wsgi:application --bind 0.0.0.0:8000"'
 
@@ -54,7 +55,17 @@ services:
       context: ./starter_expert
     volumes:
       - .:/src
-    command: ["celery", "--workdir=./src", "-A", "proj", "worker"]
+    command: ["celery", "--workdir=./src", "-A", "proj", "worker", "-l", "info"]
+
+  celery-beat:
+    restart: always
+    build:
+      context: ./starter_expert
+
+    volumes:
+      - .:/src
+    command: ["celery", "--workdir=./src", "-A", "proj", "beat", "-l", "info"]
+
 
 
 volumes:
