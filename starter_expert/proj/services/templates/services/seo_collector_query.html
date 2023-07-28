@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Отчеты</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'services/css/indexer.css' %}">
+</head>
+<body>
+    <a href="{% url 'seo_collector_all_query' %}">Вернуться назад</a>
+    <table class="reports-table">
+        <thead>
+            <tr>
+                <th scope="col">NMID</th>
+                <th scope="col">Фраза</th>
+                <th scope="col">Глубина</th>
+                <th scope="col">Частота</th>
+                <th scope="col">Топовая категория</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for keyword_data in page_content %}
+            <tr>
+                <td data-cell="nmid">{{ keyword_data.nmid }}</td>
+                <td data-cell="keywords">{{ keyword_data.keywords }}</td>
+                <td data-cell="req_depth">{{ keyword_data.req_depth }}</td>
+                <td data-cell="frequency">{{ keyword_data.frequency }}</td>
+                <td data-cell="top_category">{{ keyword_data.top_category }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <footer>
+        <div class="pagination">
+            <span class="step-links">
+                {% if page_content.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                {% endif %}
+
+                <span class="current">
+                    Page {{ page_content.number }} of {{ page_content.paginator.num_pages }}
+                </span>
+
+                {% if page_content.has_next %}
+                    <a href="?page={{ page_content.next_page_number }}&query={{ query }}&depth={{ depth }}">next</a>
+                    <a href="?page={{ page_content.paginator.num_pages }}&query={{ query }}&depth={{ depth }}">last &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    </footer>
+</body>
+</html>

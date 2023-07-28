@@ -1,7 +1,12 @@
+import datetime
+
 from .utils import Indexer
 from celery import shared_task
 from . import utils
-from .models import IndexerReportData, IndexerReport, NmidToBeReported
+from .models import (
+    IndexerReportData, IndexerReport, NmidToBeReported,
+    QuerySeoCollector, KeywordsSeoCollector
+)
 from django.contrib.auth.models import User
 
 
@@ -29,9 +34,9 @@ def createNmidToReport(nmid, user_id):
 
     except Exception as e:
         print(e)
+        print("HI")
 
 
-#
 @shared_task
 def iterateNmids():
     queries = NmidToBeReported.objects.all()
@@ -42,8 +47,29 @@ def iterateNmids():
         )
         utils.createReportData(report)
 
-
     reports = IndexerReport.objects.filter(ready=False)
 
     for report in reports:
         utils.createReportData(report)
+        
+
+@shared_task
+def seo_collector(query, depth):
+    """Запускает SeoCollector"""
+    collector = utils.SeoCollector(query, depth)
+    collector.run()
+
+
+@shared_task
+def clear_old_seo_collectors():
+    """Удаляет висячие запросы из SeoCollectora (которые были не до конца завершены),
+    и удаляет запросы хранящиеся в базе данных целый месяц"""
+    queries = QuerySeoCollector.objects.all()
+
+    for query in queries:
+        if query.create_date < (datetime.now() - datetime.timedelta(month = 1)):
+            query.delete()
+
+        if query.create_date < (datetime.now() - datetime.timedelta(day = 1)) and not query.completed:
+            query.delete()
+

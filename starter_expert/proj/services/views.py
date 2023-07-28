@@ -1,17 +1,22 @@
 import io
 import xlsxwriter
+import datetime
+
 from . import utils
-from .forms import Upload_nmids_form
-from .models import IndexerReportData, IndexerReport, NmidToBeReported
+from .forms import Upload_nmids_form, QueryForm
+from .models import (
+    IndexerReportData, IndexerReport, NmidToBeReported,
+    QuerySeoCollector, KeywordsSeoCollector
+)
 from . import tasks
 from django.http import FileResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.conf import settings
+from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-
-
-# Create your views here.
+from django.http import Http404
 
 # лк со всеми инструментами
 @login_required(login_url='login')
@@ -108,3 +113,75 @@ def detailReportInfo(request, reports_nmid):
     page_number = request.GET.get('page')
     page_content = paginator.get_page(page_number)
     return render(request, 'services/indexerReports.html', {'page_content': page_content})
+
+
+def download_seo_collector_query(request):
+    query = request.GET.get('query')
+    depth = request.GET.get('depth')
+    fileOperator = utils.FileOperator()
+    query_obj = QuerySeoCollector.objects.filter(query=query, depth=depth).first()
+    if query_obj is not None:
+        #if query_obj.completed:
+        buffer = fileOperator.create_seo_collector_buffer(query, depth)
+        return FileResponse(buffer, as_attachment=True, filename=f'{query} {depth}.xlsx')
+
+    raise Http404
+
+
+def seo_collector_all_query(request):
+    """Страница запросов по seo wildberries"""
+    if request.POST:
+        form = QueryForm(request.POST)
+        if form.is_valid():
+            tasks.seo_collector.delay(form.cleaned_data['query'], form.cleaned_data['depth'])
+            return redirect(seo_collector_all_query)
+    else:
+        paginator = Paginator(QuerySeoCollector.objects.all(), 25)
+        page_number = request.GET.get('page')
+        page_content = paginator.get_page(page_number)
+        return render(
+            request,
+            'services/seo_collector_all_query.html',
+            {
+                'page_content': page_content
+            }
+        )
+
+
+def seo_collector_query(request):
+    """Подробная страница query. seo для wildberries"""
+    query = request.GET.get('query')
+    depth = request.GET.get('depth')
+
+    if query is None or depth is None:
+        return redirect(seo_collector_all_query)
+    if not depth.isdigit():
+        raise Http404
+
+    query_obj = QuerySeoCollector.objects\
+                    .prefetch_related("keywords")\
+                    .filter(query=query, depth=depth)\
+                    .first()
+
+    if query_obj is None:
+        tasks.seo_collector.delay(query, int(depth))
+
+        return render(request, 'services/seo_collector_create_task.html', {
+            'query': query, 
+            'depth': depth
+        })
+
+    paginator = Paginator(query_obj.keywords.all(), 25)
+    page_number = request.GET.get('page')
+    page_content = paginator.get_page(page_number)
+
+    return render(
+        request, 
+        'services/seo_collector_query.html', 
+        {
+            'page_content': page_content, 
+            'paginator': paginator,
+            'query': query,
+            'depth': depth, 
+        }
+    )

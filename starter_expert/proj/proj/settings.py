@@ -128,12 +128,22 @@ LOGIN_REDIRECT_URL = 'login'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+REDIS_LOCATION = "redis://redis:6379"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_LOCATION,
+    }
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = 'redis://redis:6379'
+CELERY_BROKER_URL = REDIS_LOCATION
 
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost',
+    'https://127.0.0.1',
+    'http://127.0.0.1',
 ]

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'services/css/indexer.css' %}">
+</head>
+<body>
+    <table class="reports-table">
+		<thead>
+            <tr>
+                <th scope="col">Запрос</th>
+                <th scope="col">Дата создания</th>
+                <th scope="col">Глубина</th>
+                <th scope="col">Полностью собран</th>
+                <th scope="col">Скачать</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for query in page_content %}
+            <tr>
+            	<a>
+	                <td data-cell="query"><a href="{% url 'seo_collector_query' %}?query={{ query.query }}&depth={{ query.depth }}">{{ query.query }}</a></td>
+	                <td data-cell="date">{{ query.create_date }}</td>
+	                <td data-cell="depth">{{ query.depth }}</td>
+                    <td data-ceil="completed">{% if query.completed %}Да{% else %}Нет{% endif %}</td>
+                    <td data-ceil="download"><a href="{% url 'download_seo_collector_query' %}?query={{ query.query }}&depth={{ query.depth }}">Скачать файл</a></td>
+            	</a>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+        <form action={% url 'seo_collector_all_query' %} method=post>
+        	{% csrf_token %}
+        	<div>Запрос: </div>
+        	<input name='query' type='text'>
+        	<div>Глубина: </div>
+        	<input name='depth' type='text'>
+        	<button type="submit" style="width: 20px; height: 20px;"></button>
+        </form>
+    <footer>
+        <div class="pagination">
+            <span class="step-links">
+                {% if page_content.has_previous %}
+                    <a href="?page=1">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                {% endif %}
+
+                <span class="current">
+                    Page {{ page_content.number }} of {{ page_content.paginator.num_pages }}.
+                </span>
+
+                {% if page_content.has_next %}
+                    <a href="?page={{ page_content.next_page_number }}">next</a>
+                    <a href="?page={{ page_content.paginator.num_pages }}
+                    ">last &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+    </footer>
+</body>
+</html>

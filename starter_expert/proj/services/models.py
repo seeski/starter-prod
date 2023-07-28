@@ -9,6 +9,7 @@ class NmidToBeReported(models.Model):
     name = models.CharField(max_length=255)
     url = models.URLField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
     class Meta:
         verbose_name_plural = "NmidsToBeReported"
 
@@ -25,6 +26,7 @@ class IndexerReport(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     ready = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
     class Meta:
         verbose_name_plural = "IndexerReports"
 
@@ -53,5 +55,34 @@ class IndexerReportData(models.Model):
     ad_spots = models.IntegerField(null=True, default=None)
     ad_place = models.IntegerField(null=True, default=None)
     report = models.ForeignKey(IndexerReport, null=False, on_delete=models.CASCADE)
+
     class Meta:
         verbose_name_plural = 'IndexerReportsData'
+
+
+class QuerySeoCollector(models.Model):
+    """Модель представления запроса по query и глубине depth"""
+    query = models.CharField(max_length=255)
+    create_date = models.DateTimeField(auto_now=True)
+    depth = models.IntegerField()
+    completed = models.BooleanField(default=False)
+
+
+class KeywordsSeoCollector(models.Model):
+    """Seo фразы"""
+    nmid = models.IntegerField()
+    keywords = models.CharField(max_length=255)
+    frequency = models.CharField()
+    req_depth = models.IntegerField()
+    top_category = models.CharField()
+
+    query = models.ForeignKey(
+        QuerySeoCollector, 
+        null=False, 
+        on_delete=models.CASCADE,
+        related_name='keywords'
+    )
+
+    class Meta:
+        verbose_name = "Сео данные"
+        verbose_name_plural = "Сео данные"
