@@ -6,7 +6,7 @@ from . import utils
 from .forms import Upload_nmids_form, QueryForm
 from .models import (
     IndexerReportData, IndexerReport, NmidToBeReported,
-    QuerySeoCollector, KeywordsSeoCollector
+    SeoReport, SeoReportData
 )
 from . import tasks
 from django.http import FileResponse
@@ -122,7 +122,7 @@ def download_seo_collector_query(request):
 
     if pk.isdigit():
         pk = int(pk)
-        query_obj = QuerySeoCollector.objects.prefetch_related("keywords").filter(pk=pk).first()
+        query_obj = SeoReport.objects.prefetch_related("keywords").filter(pk=pk).first()
         query = query_obj.query
         depth = query_obj.depth
         if query_obj is not None:
@@ -141,18 +141,17 @@ def seo_collector_all_query(request):
         form = QueryForm(request.POST)
         if form.is_valid():
             tasks.seo_collector.delay(form.cleaned_data['query'], form.cleaned_data['depth'])
-            return redirect(seo_collector_all_query)
-    else:
-        paginator = Paginator(QuerySeoCollector.objects.all(), 25)
-        page_number = request.GET.get('page')
-        page_content = paginator.get_page(page_number)
-        return render(
-            request,
-            'services/seo_collector_all_query.html',
-            {
-                'page_content': page_content
-            }
-        )
+            
+    paginator = Paginator(SeoReport.objects.all(), 25)
+    page_number = request.GET.get('page')
+    page_content = paginator.get_page(page_number)
+    return render(
+        request,
+        'services/seo_collector_all_query.html',
+        {
+            'page_content': page_content
+        }
+    )
 
 
 @login_required(login_url='login')
@@ -165,7 +164,7 @@ def seo_collector_query(request):
     if not pk.isdigit():
         raise Http404
 
-    query_obj = QuerySeoCollector.objects\
+    query_obj = SeoReport.objects\
                     .prefetch_related("keywords")\
                     .filter(pk=pk)\
                     .first()

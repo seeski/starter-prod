@@ -148,7 +148,7 @@ class FileOperator:
         ]
 
         if query_obj is None:
-            raise Exception(f"QuerySeoCollector с query='{query_obj.query}' и depth='{query_obj.depth}' не существует")
+            raise Exception(f"SeoReport с query='{query_obj.query}' и depth='{query_obj.depth}' не существует")
 
         sheet.write(1, 1, "Запрос: ")
         sheet.write(1, 2, query_obj.query)
@@ -693,12 +693,12 @@ class SeoCollector:
         # indexeres = []
 
         # Если запись в базе данных уже создана, то мы не выполняем таску
-        # if models.QuerySeoCollector.objects.filter(
+        # if models.SeoReport.objects.filter(
         #    query=self.query, 
         #    depth=self.depth
         # ).first() is None:
 
-        query_obj = models.QuerySeoCollector.objects.create(
+        query_obj = models.SeoReport.objects.create(
             query=self.query, 
             depth=self.depth
         )
@@ -712,7 +712,7 @@ class SeoCollector:
             # Получаем количество товаров и топовую категорию по каждому
             # тексту, подходящего по критериям класса Checker
             for indexer_data in indexer.iterate_total_and_top_category():
-                models.KeywordsSeoCollector.objects.create(
+                models.SeoReportData.objects.create(
                     **indexer_data, 
                     query=query_obj,
                 )

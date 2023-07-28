@@ -5,7 +5,7 @@ from celery import shared_task
 from . import utils
 from .models import (
     IndexerReportData, IndexerReport, NmidToBeReported,
-    QuerySeoCollector, KeywordsSeoCollector
+    SeoReport, SeoReportData
 )
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -71,7 +71,7 @@ def delete_old_seo_collectors():
 
     # Выделяем в базе queries, которые уже лежат месяц (неактуальные) и
     # по которым до конца небыло собрано достаточно информации
-    queries = QuerySeoCollector.objects.filter(
+    queries = SeoReport.objects.filter(
         (Q(create_date__lt=now - month)) | \
         (Q(completed=False) & Q(create_date__lt = now - six_hour))
     ).delete()
@@ -81,7 +81,7 @@ def delete_old_seo_collectors():
 def update_seo_collectors():
     now = datetime.datetime.now()
     day = datetime.timedelta(days=1)
-    queries = QuerySeoCollector.objects.prefetch_related("keywords").all()
+    queries = SeoReport.objects.prefetch_related("keywords").all()
 
     for query in queries:
         query.keywords.all().delete()

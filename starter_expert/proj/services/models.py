@@ -60,15 +60,15 @@ class IndexerReportData(models.Model):
         verbose_name_plural = 'IndexerReportsData'
 
 
-class QuerySeoCollector(models.Model):
+class SeoReport(models.Model):
     """Модель представления запроса по query и глубине depth"""
     query = models.CharField(max_length=255, verbose_name="Запрос")
-    create_date = models.DateTimeField(auto_now=True, verbose_name="Дата создания")
-    depth = models.IntegerField(verbose_name="Количество товара")
+    create_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    depth = models.IntegerField(verbose_name="Глубина")
     completed = models.BooleanField(default=False, verbose_name="Завершено")
 
 
-class KeywordsSeoCollector(models.Model):
+class SeoReportData(models.Model):
     """Seo фразы"""
     nmid = models.IntegerField(verbose_name="ID товара")
     keywords = models.CharField(max_length=255, verbose_name="Фраза")
@@ -77,7 +77,7 @@ class KeywordsSeoCollector(models.Model):
     top_category = models.CharField(verbose_name="Топ категория")
 
     query = models.ForeignKey(
-        QuerySeoCollector, 
+        SeoReport, 
         null=False, 
         on_delete=models.CASCADE,
         related_name='keywords'

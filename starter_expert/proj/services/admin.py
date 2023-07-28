@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
 	IndexerReport, IndexerReportData, NmidToBeReported,
-	QuerySeoCollector,KeywordsSeoCollector
+	SeoReport,SeoReportData
 )
 # Register your models here.
 
@@ -10,6 +10,6 @@ admin.site.register(IndexerReportData)
 admin.site.register(NmidToBeReported)
 
 ### SEO COLLECTOR ###
-admin.site.register(QuerySeoCollector)
-admin.site.register(KeywordsSeoCollector)
+admin.site.register(SeoReport)
+admin.site.register(SeoReportData)
 #####################
