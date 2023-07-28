@@ -8,6 +8,7 @@ from .models import (
     QuerySeoCollector, KeywordsSeoCollector
 )
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 
 # таска для создание записи о определенном nmid
@@ -34,7 +35,6 @@ def createNmidToReport(nmid, user_id):
 
     except Exception as e:
         print(e)
-        print("HI")
 
 
 @shared_task
@@ -60,16 +60,30 @@ def seo_collector(query, depth):
     collector.run()
 
 
+'''
 @shared_task
-def clear_old_seo_collectors():
+def delete_old_seo_collectors():
     """Удаляет висячие запросы из SeoCollectora (которые были не до конца завершены),
     и удаляет запросы хранящиеся в базе данных целый месяц"""
-    queries = QuerySeoCollector.objects.all()
+    now = datetime.datetime.now()
+    month = datetime.timedelta(weeks = 4)
+    six_hour = datetime.timedelta(hours = 6)
+
+    # Выделяем в базе queries, которые уже лежат месяц (неактуальные) и
+    # по которым до конца небыло собрано достаточно информации
+    queries = QuerySeoCollector.objects.filter(
+        (Q(create_date__lt=now - month)) | \
+        (Q(completed=False) & Q(create_date__lt = now - six_hour))
+    ).delete()
+
+
+@shared_task
+def update_seo_collectors():
+    now = datetime.datetime.now()
+    day = datetime.timedelta(days=1)
+    queries = QuerySeoCollector.objects.prefetch_related("keywords").all()
 
     for query in queries:
-        if query.create_date < (datetime.now() - datetime.timedelta(month = 1)):
-            query.delete()
-
-        if query.create_date < (datetime.now() - datetime.timedelta(day = 1)) and not query.completed:
-            query.delete()
-
+        query.keywords.all().delete()
+        tasks.seo_collector(query)
+'''

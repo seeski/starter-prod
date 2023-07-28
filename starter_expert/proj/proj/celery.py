@@ -21,14 +21,7 @@ app.conf.beat_schedule = {
         'task': 'services.tasks.iterateNmids',
         'schedule': crontab(hour=9, minute=30),
     },
-    'clear-old-seo-collectors': {
-        'task': 'services.tasks.clear_old_seo_collectors',
-        'schedule': crontab(hour=7, minute=59),
-    }
 }
-
-
-
 
 
 # Load task modules from all registered Django apps.

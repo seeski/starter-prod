@@ -112,7 +112,7 @@ class FileOperator:
 
         # собираем данные из бд, итерируем, заносим в лист
         data = models.IndexerReportsData.objects.filter(report_id=report_id)
-        row_counter = 1
+        row_counter = 4
         for query in data:
             sheet.write(row_counter, 0, query.priority_cat)
             sheet.write(row_counter, 1, query.keywords)
@@ -129,24 +129,34 @@ class FileOperator:
         buffer.seek(0)
         return buffer
 
-    def create_seo_collector_buffer(self, query, depth):
+    def create_seo_collector_buffer(self, query_obj):
         """Создает файл с отчетом собранных данных с wildberries"""
         buffer = io.BytesIO()
         book = xlsxwriter.Workbook(buffer)
         sheet = book.add_worksheet()
+
+        center = book.add_format({'align': 'center'})
+
+        sheet.set_column(0, 0, 50)
+        sheet.set_column(1, 1, 25)
+        sheet.set_column(2, 2, 25)
+        sheet.set_column(3, 3, 35)
 
         # создаем строку с названием всех колонок
         columns = [
             "Фразы", "Частотность", "Глубина", "Приоритетная категория" 
         ]
 
-        data = models.QuerySeoCollector.objects.prefetch_related("keywords").filter(query=query, depth=depth).first()
+        if query_obj is None:
+            raise Exception(f"QuerySeoCollector с query='{query_obj.query}' и depth='{query_obj.depth}' не существует")
 
-        if data is None:
-            raise Exception(f"QuerySeoCollector с query='{query}' и depth='{depth}' не существует")
+        sheet.write(1, 1, "Запрос: ")
+        sheet.write(1, 2, query_obj.query)
+        sheet.write(2, 1, "Глубина: ")
+        sheet.write(2, 2, query_obj.depth)
+        row_counter = 4
 
-        row_counter = 1
-        for query in data.keywords.all():
+        for query in query_obj.keywords.all():
             sheet.write(row_counter, 0, query.keywords)
             sheet.write(row_counter, 1, query.frequency)
             sheet.write(row_counter, 2, query.req_depth)
@@ -282,7 +292,6 @@ class URLOperator:
         )
 
     def create_nmid_detail_url(self, nmid):
-
         return self.nmid_detail_url_template.format(nmid)
 
 
@@ -684,30 +693,29 @@ class SeoCollector:
         # indexeres = []
 
         # Если запись в базе данных уже создана, то мы не выполняем таску
-        if models.QuerySeoCollector.objects.filter(query=self.query, depth=self.depth).first() is None:
+        # if models.QuerySeoCollector.objects.filter(
+        #    query=self.query, 
+        #    depth=self.depth
+        # ).first() is None:
 
-            query_obj = models.QuerySeoCollector.objects.create(
-                query=self.query, 
-                depth=self.depth
-            )
-            url_first_ten_pages_products = URLOperator().create_query_url_template(
-                query=self.query
-            )
-            products_id = DataCollector().get_query(url_first_ten_pages_products)
+        query_obj = models.QuerySeoCollector.objects.create(
+            query=self.query, 
+            depth=self.depth
+        )
+        url_first_ten_pages_products = URLOperator().create_query_url_template(
+            query=self.query
+        )
+        products_id = DataCollector().get_query(url_first_ten_pages_products)
 
-            for product_id in products_id[:self.depth]:
-                indexer = Indexer(product_id)
-                # Получаем количество товаров и топовую категорию по каждому
-                # тексту, подходящего по критериям класса Checker
-                for indexer_data in indexer.iterate_total_and_top_category():
-                    models.KeywordsSeoCollector.objects.create(
-                        **indexer_data, 
-                        query=query_obj,
-                    )
+        for product_id in products_id[:self.depth]:
+            indexer = Indexer(product_id)
+            # Получаем количество товаров и топовую категорию по каждому
+            # тексту, подходящего по критериям класса Checker
+            for indexer_data in indexer.iterate_total_and_top_category():
+                models.KeywordsSeoCollector.objects.create(
+                    **indexer_data, 
+                    query=query_obj,
+                )
 
-            query_obj.completed = True
-            query_obj.save()
-
-
-
-
+        query_obj.completed = True
+        query_obj.save()

@@ -115,19 +115,26 @@ def detailReportInfo(request, reports_nmid):
     return render(request, 'services/indexerReports.html', {'page_content': page_content})
 
 
+@login_required(login_url='login')
 def download_seo_collector_query(request):
-    query = request.GET.get('query')
-    depth = request.GET.get('depth')
+    pk = request.GET.get('pk')
     fileOperator = utils.FileOperator()
-    query_obj = QuerySeoCollector.objects.filter(query=query, depth=depth).first()
-    if query_obj is not None:
-        #if query_obj.completed:
-        buffer = fileOperator.create_seo_collector_buffer(query, depth)
-        return FileResponse(buffer, as_attachment=True, filename=f'{query} {depth}.xlsx')
+
+    if pk.isdigit():
+        pk = int(pk)
+        query_obj = QuerySeoCollector.objects.prefetch_related("keywords").filter(pk=pk).first()
+        query = query_obj.query
+        depth = query_obj.depth
+        if query_obj is not None:
+            if query_obj.completed:
+                buffer = fileOperator.create_seo_collector_buffer(query_obj)
+
+                return FileResponse(buffer, as_attachment=True, filename=f'{query} {depth}.xlsx')
 
     raise Http404
 
 
+@login_required(login_url='login')
 def seo_collector_all_query(request):
     """Страница запросов по seo wildberries"""
     if request.POST:
@@ -148,28 +155,20 @@ def seo_collector_all_query(request):
         )
 
 
+@login_required(login_url='login')
 def seo_collector_query(request):
     """Подробная страница query. seo для wildberries"""
-    query = request.GET.get('query')
-    depth = request.GET.get('depth')
+    pk = request.GET.get('pk')
 
-    if query is None or depth is None:
+    if pk is None:
         return redirect(seo_collector_all_query)
-    if not depth.isdigit():
+    if not pk.isdigit():
         raise Http404
 
     query_obj = QuerySeoCollector.objects\
                     .prefetch_related("keywords")\
-                    .filter(query=query, depth=depth)\
+                    .filter(pk=pk)\
                     .first()
-
-    if query_obj is None:
-        tasks.seo_collector.delay(query, int(depth))
-
-        return render(request, 'services/seo_collector_create_task.html', {
-            'query': query, 
-            'depth': depth
-        })
 
     paginator = Paginator(query_obj.keywords.all(), 25)
     page_number = request.GET.get('page')
@@ -181,7 +180,6 @@ def seo_collector_query(request):
         {
             'page_content': page_content, 
             'paginator': paginator,
-            'query': query,
-            'depth': depth, 
+            'pk': pk,
         }
     )

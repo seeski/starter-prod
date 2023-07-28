@@ -22,11 +22,11 @@
             {% for query in page_content %}
             <tr>
             	<a>
-	                <td data-cell="query"><a href="{% url 'seo_collector_query' %}?query={{ query.query }}&depth={{ query.depth }}">{{ query.query }}</a></td>
-	                <td data-cell="date">{{ query.create_date }}</td>
+	                <td data-cell="query"><a href="{% url 'seo_collector_query' %}?pk={{ query.pk }}">{{ query.query }}</a></td>
+	                <td data-cell="date">{{ query.create_date|date:"N j, Y" }}</td>
 	                <td data-cell="depth">{{ query.depth }}</td>
                     <td data-ceil="completed">{% if query.completed %}Да{% else %}Нет{% endif %}</td>
-                    <td data-ceil="download"><a href="{% url 'download_seo_collector_query' %}?query={{ query.query }}&depth={{ query.depth }}">Скачать файл</a></td>
+                    <td data-ceil="download">{% if query.completed %}<a href="{% url 'download_seo_collector_query' %}?pk={{ query.pk }}">Скачать файл</a>{% else %}Полностью не загружен{% endif %}</td>
             	</a>
             </tr>
             {% endfor %}
@@ -38,14 +38,14 @@
         	<input name='query' type='text'>
         	<div>Глубина: </div>
         	<input name='depth' type='text'>
-        	<button type="submit" style="width: 20px; height: 20px;"></button>
+        	<div><button type="submit" style="width: 100px; height: 20px;">Запустить</button></div>
         </form>
     <footer>
         <div class="pagination">
             <span class="step-links">
                 {% if page_content.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                    <a href="?page=1&pk=pk">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}&pk=pk">previous</a>
                 {% endif %}
 
                 <span class="current">
@@ -53,9 +53,8 @@
                 </span>
 
                 {% if page_content.has_next %}
-                    <a href="?page={{ page_content.next_page_number }}">next</a>
-                    <a href="?page={{ page_content.paginator.num_pages }}
-                    ">last &raquo;</a>
+                    <a href="?page={{ page_content.next_page_number }}&pk=pk">next</a>
+                    <a href="?page={{ page_content.paginator.num_pages }}&pk=pk">last &raquo;</a>
                 {% endif %}
             </span>
         </div>

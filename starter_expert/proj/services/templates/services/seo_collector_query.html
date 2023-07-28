@@ -33,9 +33,17 @@
     <footer>
         <div class="pagination">
             <span class="step-links">
+                {% for page_obj in paginator.page_range %}
+                    {% if page_obj.number == numb_page %} 
+                    <a class="pagination" href="?page={{ p }}&pk={{ pk }}">{{ p }}</a>
+                    }
+
+                {% endfor %}
                 {% if page_content.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                    <a class="pagination href="?page=1&pk={{ pk }}">&laquo; first</a>
+                {% if page_content.has_previous %}
+                    <a class="pagination href="?page=1&pk={{ pk }}">&laquo; first</a>
+                    <a class="pagination href="?page={{ page_obj.previous_page_number }}&pk={{ pk }}">previous</a>
                 {% endif %}
 
                 <span class="current">
@@ -43,11 +51,23 @@
                 </span>
 
                 {% if page_content.has_next %}
-                    <a href="?page={{ page_content.next_page_number }}&query={{ query }}&depth={{ depth }}">next</a>
-                    <a href="?page={{ page_content.paginator.num_pages }}&query={{ query }}&depth={{ depth }}">last &raquo;</a>
+                    < href="?page={{ page_content.next_page_number }}&pk={{ pk }}">next</a>
+                    <a href="?page={{ page_content.paginator.num_pages }}&pk={{ pk }}">last &raquo;</a>
                 {% endif %}
             </span>
         </div>
+        <style>
+            .pagination {
+              display: inline-block;
+            }
+
+            .pagination a {
+              color: black;
+              float: left;
+              padding: 8px 16px;
+              text-decoration: none;
+            }
+        </style>
     </footer>
 </body>
 </html>
