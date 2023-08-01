@@ -1,0 +1,19 @@
+{% extends 'services/base.html' %}
+
+{% block content %}
+<div style="display: flex; width: 100vw; height: 100vh; justify-content: center; align-items: center;">
+	<div style="display: flex; width: 400px; height: 100px; justify-content: center; align-items: center;">
+		<div>
+			<div>Вы уверены, что хотите удалить?</div>
+			</br>
+			<div style="display: flex; justify-content: space-around;">
+				<form method="POST"><button style="width: 100px;" type="submit">Да</button>{% csrf_token %}</form>
+				<button style="width: 100px"><a href="{{ referer }}">Нет</a></button>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	
+</script>
+{% endblock %}

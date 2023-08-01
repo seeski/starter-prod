@@ -13,6 +13,7 @@
                     <th scope="col">Глубина</th>
                     <th scope="col">Полностью собран</th>
                     <th scope="col">Скачать</th>
+                    <th scope="col">Удалить</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,6 +25,7 @@
     	                <td data-cell="depth">{{ query.depth }}</td>
                         <td data-ceil="completed">{% if query.completed %}Да{% else %}Нет{% endif %}</td>
                         <td data-ceil="download">{% if query.completed %}<a href="{% url 'download_seo_collector_query' %}?pk={{ query.pk }}">Скачать файл</a>{% else %}Полностью не загружен{% endif %}</td>
+                        <td data-ceil="delete"><a href="{% url 'delete_seo_report' query_pk=query.pk %}">удалить</a></td>
                 	</a>
                 </tr>
                 {% endfor %}

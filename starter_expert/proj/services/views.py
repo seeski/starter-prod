@@ -118,7 +118,7 @@ def detailReportInfo(request, reports_nmid):
 @login_required(login_url='login')
 def download_seo_collector_query(request):
     pk = request.GET.get('pk')
-    fileOperator = utils.FileOperator()
+    fileOperator = utils.SeoCollectorFileOperator()
 
     if pk.isdigit():
         pk = int(pk)
@@ -132,6 +132,22 @@ def download_seo_collector_query(request):
                 return FileResponse(buffer, as_attachment=True, filename=f'{query} {depth}.xlsx')
 
     raise Http404
+
+
+@login_required(login_url='login')
+def delete_seo_report(request, query_pk):
+    """Удаляет seo report"""
+    if request.POST:
+        SeoReport.objects.filter(pk=query_pk).delete()
+        return redirect(seo_collector_all_query)
+    else:
+        return render(
+            request, 
+            "services/sure_delete_seo_report.html", 
+            {
+                'referer': request.META['HTTP_REFERER']
+            }
+        )
 
 
 @login_required(login_url='login')

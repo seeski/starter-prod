@@ -1,34 +1,85 @@
 {# Переменная отвечающая за передачу get параметров #}
 
-<div class="pagination">
-    <span class="step-links">
+<div id="pagination">
+    <br/>
+    <ul>
         {% if page_content.has_previous %}
-            <a class="pagination" href="?page=1{{ additional_parameters_get_query }}">&laquo; first</a>
+            <li class="page-item previous no">
+                <a href="?page={{ page_content.previous_page_number }}{{ additional_parameters_get_query }}">Предыдущий</a>
+            </li>
         {% endif %}
+        <li class="no page-item">
+            <a href="?page=1{{ additional_parameters_get_query }}">1</a>
+        </li>
+        <li class="out-of-range">
+            <a>...</a>
+        </li>
         {% if page_content.has_previous %}
-            <a class="pagination" href="?page=1{{ additional_parameters_get_query }}">&laquo; first</a>
-            <a class="pagination" href="?page={{ page_obj.previous_page_number }}{{ additional_parameters_get_query }}">previous</a>
+        <li class="page-item no">
+            <a 
+              href="?page={{ page_content.previous_page_number }}{{ additional_parameters_get_query }}"
+            >{{ page_content.previous_page_number }}</a>
+        </li>
         {% endif %}
-
-        <span class="current">
-            Page {{ page_content.number }} of {{ page_content.paginator.num_pages }}
-        </span>
-
+        <li class="page-item active">
+            <a>{{ page_content.number }}</a>
+        </li>
         {% if page_content.has_next %}
-            <a href="?page={{ page_content.next_page_number }}{{ additional_parameters_get_query }}">next</a>
-            <a href="?page={{ page_content.paginator.num_pages }}{{ additional_parameters_get_query }}">last &raquo;</a>
+            <li class="page-item no">
+                <a 
+                  href="?page={{ page_content.next_page_number }}{{ additional_parameters_get_query }}"
+                >{{ page_content.next_page_number }}</a>
+            </li>
         {% endif %}
-    </span>
+        <li class="out-of-range">
+            <a>...</a></li>
+        <li class="page-item no">
+            <a href="?page={{ page_content.paginator.num_pages }}{{ additional_parameters_get_query }}">{{ page_content.paginator.num_pages }}</a></li>
+        {% if page_content.has_next %}
+        <li class="page-item next no">
+            <a href="?page={{ page_content.next_page_number }}{{ additional_parameters_get_query }}">Следующий</a>
+        </li>
+        {% endif %}
+    </ul>
 </div>
-<style>
-    .pagination {
-      display: inline-block;
-    }
 
-    .pagination a {
-      color: black;
-      float: left;
-      padding: 8px 16px;
-      text-decoration: none;
-    }
+<style>
+
+#pagination a{
+    color: black;
+    text-decoration: none;
+}
+
+#pagination a:hover {
+  cursor: pointer;
+}
+
+#pagination ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+#pagination ul li {
+  color: #fff;
+  display: flex;
+}
+#pagination ul li a {
+  background-color: white;
+  padding: 5px 10px;
+  border: 2px solid #3D315B;
+  border-right: 0;
+}
+#pagination ul li.active a {
+  background-color: rgb(170, 170, 170);
+}
+#pagination ul li:first-child a {
+  border-radius: 5px 0 0 5px;
+}
+#pagination ul li:last-child a {
+  border-radius: 0 5px 5px 0;
+  border-right: 2px solid #3D315B;
+}
 </style>
+

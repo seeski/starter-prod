@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        'HOST': 'db',
+        'HOST': '127.0.0.1',
         'PORT': '5432',
         'USER': 'seeski',
         'PASSWORD': 'Starter_Expert%060723',
@@ -130,12 +130,12 @@ LOGIN_REDIRECT_URL = 'login'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-REDIS_LOCATION = "redis://redis:6379"
+REDIS_LOCATION = "redis://127.0.0.1:6379"
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_LOCATION,
+        "LOCATION": "REDIS_LOCATION",
     }
 }
 

@@ -129,44 +129,6 @@ class FileOperator:
         buffer.seek(0)
         return buffer
 
-    def create_seo_collector_buffer(self, query_obj):
-        """Создает файл с отчетом собранных данных с wildberries"""
-        buffer = io.BytesIO()
-        book = xlsxwriter.Workbook(buffer)
-        sheet = book.add_worksheet()
-
-        center = book.add_format({'align': 'center'})
-
-        sheet.set_column(0, 0, 50)
-        sheet.set_column(1, 1, 25)
-        sheet.set_column(2, 2, 25)
-        sheet.set_column(3, 3, 35)
-
-        # создаем строку с названием всех колонок
-        columns = [
-            "Фразы", "Частотность", "Глубина", "Приоритетная категория" 
-        ]
-
-        if query_obj is None:
-            raise Exception(f"SeoReport с query='{query_obj.query}' и depth='{query_obj.depth}' не существует")
-
-        sheet.write(1, 1, "Запрос: ")
-        sheet.write(1, 2, query_obj.query)
-        sheet.write(2, 1, "Глубина: ")
-        sheet.write(2, 2, query_obj.depth)
-        row_counter = 4
-
-        for query in query_obj.keywords.all():
-            sheet.write(row_counter, 0, query.keywords)
-            sheet.write(row_counter, 1, query.frequency)
-            sheet.write(row_counter, 2, query.req_depth)
-            sheet.write(row_counter, 3, query.top_category)
-            row_counter += 1
-
-        book.close()
-        buffer.seek(0)
-        return buffer
-
     def getRequestsData(self):
 
         # получаем ответ от вб с закодированными данными по миллиону топ запросов
@@ -481,7 +443,6 @@ class DataCollector:
             print(e, url)
             return ''
 
-
 # класс проверяет/сравнивает информацию
 class Checker:
 
@@ -620,20 +581,6 @@ class Indexer:
             query_category_url = self.url_operator.create_query_categories_url(query)
             return self.data_collector.get_query_top_category(query_category_url)
 
-    def iterate_total_and_top_category(self):
-        for query in self.resulted_queries:
-            keywords = query[0]
-            frequency = query[1]
-            top_category = self.__getTopCategory(keywords)
-            req_depth = self.__get_req_depth(keywords)
-
-            yield {
-                'nmid': self.nmid,
-                'frequency': frequency,
-                'keywords': keywords,
-                'top_category': top_category,
-                'req_depth': req_depth,
-            }
     # заключительный метод-генератор, возвращает словарь со всеми необходимыми данными
     def iterate_queries(self):
         for query in self.resulted_queries:
@@ -679,6 +626,69 @@ class Indexer:
             }
 
 
+class SeoCollectorFileOperator(FileOperator):
+    
+    def create_seo_collector_buffer(self, query_obj):
+        """Создает файл с отчетом собранных данных с wildberries"""
+        buffer = io.BytesIO()
+        book = xlsxwriter.Workbook(buffer)
+        sheet = book.add_worksheet()
+
+        center = book.add_format({'align': 'center'})
+
+        sheet.set_column(1, 1, 50)
+        sheet.set_column(2, 2, 25)
+        sheet.set_column(3, 3, 25)
+        sheet.set_column(4, 4, 35)
+
+        # создаем строку с названием всех колонок
+        columns = [
+            "Эталон", "Фразы", "Частотность", "Глубина", "Приоритетная категория" 
+        ]
+
+        if query_obj is None:
+            raise Exception(f"SeoReport с query='{query_obj.query}' и depth='{query_obj.depth}' не существует")
+
+        for i, column_name in enumerate(columns):
+            sheet.write(5, i, column_name)
+
+        sheet.write(1, 2, "Запрос: ")
+        sheet.write(1, 3, query_obj.query)
+        sheet.write(2, 2, "Глубина: ")
+        sheet.write(2, 3, query_obj.depth)
+        row_counter = 6
+
+        for query in query_obj.keywords.all():
+            sheet.write(row_counter, 1, query.keywords)
+            sheet.write(row_counter, 2, query.frequency)
+            sheet.write(row_counter, 3, query.req_depth)
+            sheet.write(row_counter, 4, query.top_category)
+            row_counter += 1
+
+        book.close()
+        buffer.seek(0)
+        return buffer
+
+
+class SeoCollectorIndexer(Indexer):
+
+    def iterate_total_and_top_category(self):
+        for query in self.resulted_queries:
+            keywords = query[0]
+            frequency = query[1]
+            top_category = self._Indexer__getTopCategory(keywords)
+            req_depth = self._Indexer__get_req_depth(keywords)
+
+            yield {
+                'nmid': self.nmid,
+                'frequency': frequency,
+                'keywords': keywords,
+                'top_category': top_category,
+                'req_depth': req_depth,
+            }
+
+
+
 class SeoCollector:
     """Парсит seo данные по :query запросу из wildberries"""
 
@@ -693,29 +703,29 @@ class SeoCollector:
         # indexeres = []
 
         # Если запись в базе данных уже создана, то мы не выполняем таску
-        # if models.SeoReport.objects.filter(
-        #    query=self.query, 
-        #    depth=self.depth
-        # ).first() is None:
-
-        query_obj = models.SeoReport.objects.create(
+        if models.SeoReport.objects.filter(
             query=self.query, 
             depth=self.depth
-        )
-        url_first_ten_pages_products = URLOperator().create_query_url_template(
-            query=self.query
-        )
-        products_id = DataCollector().get_query(url_first_ten_pages_products)
+         ).first() is None:
 
-        for product_id in products_id[:self.depth]:
-            indexer = Indexer(product_id)
-            # Получаем количество товаров и топовую категорию по каждому
-            # тексту, подходящего по критериям класса Checker
-            for indexer_data in indexer.iterate_total_and_top_category():
-                models.SeoReportData.objects.create(
-                    **indexer_data, 
-                    query=query_obj,
-                )
+            query_obj = models.SeoReport.objects.create(
+                query=self.query, 
+                depth=self.depth
+            )
+            url_first_ten_pages_products = URLOperator().create_query_url_template(
+                query=self.query
+            )
+            products_id = DataCollector().get_query(url_first_ten_pages_products)
 
-        query_obj.completed = True
-        query_obj.save()
+            for product_id in products_id[:self.depth]:
+                indexer = SeoCollectorIndexer(product_id)
+                # Получаем количество товаров и топовую категорию по каждому
+                # тексту, подходящего по критериям класса Checker
+                for indexer_data in indexer.iterate_total_and_top_category():
+                    models.SeoReportData.objects.create(
+                        **indexer_data, 
+                        query=query_obj,
+                    )
+
+            query_obj.completed = True
+            query_obj.save()

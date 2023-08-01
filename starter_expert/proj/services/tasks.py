@@ -9,6 +9,7 @@ from .models import (
 )
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.db.utils import IntegrityError
 
 
 # таска для создание записи о определенном nmid
@@ -56,8 +57,14 @@ def iterateNmids():
 @shared_task
 def seo_collector(query, depth):
     """Запускает SeoCollector"""
-    collector = utils.SeoCollector(query, depth)
-    collector.run()
+    try:
+        collector = utils.SeoCollector(query, depth)
+        collector.run()
+    # Если запись в базе данных будет удалена,
+    # то роняется эта ошибка. Мы её и обраба-
+    # тываем
+    except IntegrityError:
+        pass
 
 
 '''

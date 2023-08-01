@@ -29,6 +29,10 @@
         </tbody>
     </table>
     <footer>
-        {% include 'services/pagination.html' with page_content=page_content page_obj=page_obj additional_parameters_get_query="&pk="|add:pk %}
+        {% include 'services/pagination.html' with 
+            page_content=page_content 
+            page_obj=page_obj 
+            additional_parameters_get_query="&pk="|add:pk 
+        %}
     </footer>
 {% endblock %}
