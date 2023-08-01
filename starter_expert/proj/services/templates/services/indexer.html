@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+{% extends 'services/base.html' %}
+
+{% block head %}
     <title>Индексатор</title>
-        {% load static %}
-    <link rel="stylesheet" href="{% static 'services/css/indexer.css' %}">
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <a href="{% url 'cabinet' %}" class="nav-link">Кабинет</a>
     <a href="{% url 'indexerReports' %}" class="nav-link">Все отчеты</a>
         <form action="{% url 'indexer' %}" method="post" enctype="multipart/form-data">
@@ -36,5 +34,4 @@
         {% endfor %}
         </tbody>
     </table>
-</body>
-</html>
+{% endblock %}

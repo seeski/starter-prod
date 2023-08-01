@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Отчеты</title>
-        {% load static %}
-    <link rel="stylesheet" href="{% static 'services/css/indexer.css' %}">
-</head>
-<body>
+{% extends 'services/base.html' %} 
 
+{% block head %}
+<title>Отчеты</title>
+{% endblock %}
+
+{% block content %}
     <table class="reports-table">
         <thead>
             <tr>
@@ -35,23 +32,6 @@
         </tbody>
     </table>
     <footer>
-        <div class="pagination">
-            <span class="step-links">
-                {% if page_content.has_previous %}
-                    <a href="?page=1">&laquo; first</a>
-                    <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-                {% endif %}
-
-                <span class="current">
-                    Page {{ page_content.number }} of {{ page_content.paginator.num_pages }}.
-                </span>
-
-                {% if page_content.has_next %}
-                    <a href="?page={{ page_content.next_page_number }}">next</a>
-                    <a href="?page={{ page_content.paginator.num_pages }}">last &raquo;</a>
-                {% endif %}
-            </span>
-        </div>
+        {% include 'services/pagination.html' with page_content=page_content page_obj=page_obj %}
     </footer>
-</body>
-</html>
+{% endblock %}
