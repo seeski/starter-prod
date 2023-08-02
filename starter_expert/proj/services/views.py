@@ -1,4 +1,5 @@
 import io
+import json
 import xlsxwriter
 import datetime
 
@@ -16,7 +17,8 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, JsonResponse
+from django.views.decorators.http import require_http_methods
 
 # лк со всеми инструментами
 @login_required(login_url='login')
@@ -115,14 +117,18 @@ def detailReportInfo(request, reports_nmid):
     return render(request, 'services/indexerReports.html', {'page_content': page_content})
 
 
+############# SEO COLLECTOR ###########################
+
+
 @login_required(login_url='login')
 def download_seo_collector_query(request):
+    """Вывод в excel """
     pk = request.GET.get('pk')
     fileOperator = utils.SeoCollectorFileOperator()
 
     if pk.isdigit():
         pk = int(pk)
-        query_obj = SeoReport.objects.prefetch_related("keywords").filter(pk=pk).first()
+        query_obj = SeoReport.objects.prefetch_related("keywords").filter(pk=pk, user=request.user).first()
         query = query_obj.query
         depth = query_obj.depth
         if query_obj is not None:
@@ -138,7 +144,7 @@ def download_seo_collector_query(request):
 def delete_seo_report(request, query_pk):
     """Удаляет seo report"""
     if request.POST:
-        SeoReport.objects.filter(pk=query_pk).delete()
+        SeoReport.objects.filter(pk=query_pk, user=request.user).delete()
         return redirect(seo_collector_all_query)
     else:
         return render(
@@ -156,9 +162,15 @@ def seo_collector_all_query(request):
     if request.POST:
         form = QueryForm(request.POST)
         if form.is_valid():
-            tasks.seo_collector.delay(form.cleaned_data['query'], form.cleaned_data['depth'])
+            query = form.cleaned_data['query']
+            depth = form.cleaned_data['depth']
+            user_id = request.user.pk
+            print(user_id)
+            tasks.seo_collector.delay(query, depth, user_id)
+
+        return redirect(seo_collector_all_query)
             
-    paginator = Paginator(SeoReport.objects.all(), 25)
+    paginator = Paginator(SeoReport.objects.filter(user=request.user), 25)
     page_number = request.GET.get('page')
     page_content = paginator.get_page(page_number)
     return render(
@@ -182,7 +194,7 @@ def seo_collector_query(request):
 
     query_obj = SeoReport.objects\
                     .prefetch_related("keywords")\
-                    .filter(pk=pk)\
+                    .filter(pk=pk, user=request.user)\
                     .first()
 
     paginator = Paginator(query_obj.keywords.all(), 25)
@@ -195,6 +207,28 @@ def seo_collector_query(request):
         {
             'page_content': page_content, 
             'paginator': paginator,
+            'completed': query_obj.completed,
             'pk': pk,
+
         }
     )
+
+
+@require_http_methods(["PATCH"])
+@login_required(login_url='login')
+def add_reference_seo_report_data(request):
+    """API для изменения поля после проставления галочки"""
+    try:
+        data = json.loads(request.body)
+        checked = data["checked"]
+        pk = data["pk"]
+        SeoReportData.objects.filter(pk = int(pk), query__user=request.user).update(reference = checked)
+        return JsonResponse({"success": True}, status=201)
+    except:
+        return JsonResponse({"success": False}, status=404)
+
+
+
+
+
+############################################################

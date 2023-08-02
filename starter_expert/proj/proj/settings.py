@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'authentication',
+    "corsheaders",
     'services',
 ]
 
@@ -50,6 +51,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
 ]
 
 ROOT_URLCONF = 'proj.urls'
@@ -79,7 +82,7 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        'HOST': '127.0.0.1',
+        'HOST': 'db',
         'PORT': '5432',
         'USER': 'seeski',
         'PASSWORD': 'Starter_Expert%060723',
@@ -130,7 +133,7 @@ LOGIN_REDIRECT_URL = 'login'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-REDIS_LOCATION = "redis://127.0.0.1:6379"
+REDIS_LOCATION = "redis://redis:6379"
 
 CACHES = {
     "default": {
@@ -149,3 +152,12 @@ CSRF_TRUSTED_ORIGINS = [
     'https://127.0.0.1',
     'http://127.0.0.1',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:80",
+    "http://127.0.0.1:80"
+]
+
+AUTO_REFERENCE = True

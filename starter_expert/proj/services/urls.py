@@ -11,4 +11,5 @@ urlpatterns = [
     path('seocollector/query/', views.seo_collector_query, name='seo_collector_query'),
     path('seocollector/download-seo-collector-query/', views.download_seo_collector_query, name='download_seo_collector_query'),
     path('seocollector/delete/<int:query_pk>/', views.delete_seo_report, name='delete_seo_report'),
+    path('seocollector/query/checked_box/', views.add_reference_seo_report_data, name='add_reference_seo_report_data')
 ]

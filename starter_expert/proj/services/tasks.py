@@ -55,10 +55,10 @@ def iterateNmids():
         
 
 @shared_task
-def seo_collector(query, depth):
+def seo_collector(query, depth, user_id):
     """Запускает SeoCollector"""
     try:
-        collector = utils.SeoCollector(query, depth)
+        collector = utils.SeoCollector(query, depth, user_id)
         collector.run()
     # Если запись в базе данных будет удалена,
     # то роняется эта ошибка. Мы её и обраба-

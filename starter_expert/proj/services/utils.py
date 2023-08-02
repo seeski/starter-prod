@@ -626,6 +626,9 @@ class Indexer:
             }
 
 
+################ SEO COLLECTOR ##########################
+
+
 class SeoCollectorFileOperator(FileOperator):
     
     def create_seo_collector_buffer(self, query_obj):
@@ -659,6 +662,7 @@ class SeoCollectorFileOperator(FileOperator):
         row_counter = 6
 
         for query in query_obj.keywords.all():
+            sheet.write(row_counter, 0, "+" if query.reference else "-")
             sheet.write(row_counter, 1, query.keywords)
             sheet.write(row_counter, 2, query.frequency)
             sheet.write(row_counter, 3, query.req_depth)
@@ -675,7 +679,7 @@ class SeoCollectorIndexer(Indexer):
     def iterate_total_and_top_category(self):
         for query in self.resulted_queries:
             keywords = query[0]
-            frequency = query[1]
+            frequency = int(query[1])
             top_category = self._Indexer__getTopCategory(keywords)
             req_depth = self._Indexer__get_req_depth(keywords)
 
@@ -692,7 +696,8 @@ class SeoCollectorIndexer(Indexer):
 class SeoCollector:
     """Парсит seo данные по :query запросу из wildberries"""
 
-    def __init__(self, query, depth):
+    def __init__(self, query, depth, user_id):
+        self.user_id = user_id
         self.query = query
         self.depth = depth
 
@@ -710,7 +715,8 @@ class SeoCollector:
 
             query_obj = models.SeoReport.objects.create(
                 query=self.query, 
-                depth=self.depth
+                depth=self.depth,
+                user=models.User.objects.get(pk=self.user_id),
             )
             url_first_ten_pages_products = URLOperator().create_query_url_template(
                 query=self.query
@@ -729,3 +735,10 @@ class SeoCollector:
 
             query_obj.completed = True
             query_obj.save()
+
+
+def comprasion(left, right):
+    return 
+
+
+######################################################################################

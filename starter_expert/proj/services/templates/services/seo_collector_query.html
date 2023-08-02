@@ -5,10 +5,11 @@
 {% endblock %}
 
 {% block content %}
-    <a href="{% url 'seo_collector_all_query' %}">Вернуться назад</a>
+    <a href="{% url 'seo_collector_all_query' %}">Вернуться назад</a>   {% if completed %}<a href="{% url 'download_seo_collector_query' %}?pk={{ pk }}">Скачать файл</a>{% endif %}
     <table class="reports-table">
         <thead>
             <tr>
+                <th scope="col">Эталон</th>
                 <th scope="col">NMID</th>
                 <th scope="col">Фраза</th>
                 <th scope="col">Глубина</th>
@@ -17,8 +18,10 @@
             </tr>
         </thead>
         <tbody>
+            {% csrf_token %}
             {% for keyword_data in page_content %}
             <tr>
+                <td data-cell="reference"><input id="checkbox_{{ keyword_data.pk }}_query" onclick="checked_box_query({{ keyword_data.pk }})" type="checkbox" {% if keyword_data.reference %}checked{% endif %}></td>
                 <td data-cell="nmid">{{ keyword_data.nmid }}</td>
                 <td data-cell="keywords">{{ keyword_data.keywords }}</td>
                 <td data-cell="req_depth">{{ keyword_data.req_depth }}</td>
@@ -29,10 +32,24 @@
         </tbody>
     </table>
     <footer>
-        {% include 'services/pagination.html' with 
-            page_content=page_content 
-            page_obj=page_obj 
-            additional_parameters_get_query="&pk="|add:pk 
-        %}
+        {% include 'services/pagination.html' with page_content=page_content page_obj=page_obj additional_parameters_get_query="&pk="|add:pk %}
     </footer>
+    <script type="text/javascript">
+        function checked_box_query(pk){
+            url = "{% url 'add_reference_seo_report_data' %}";
+            var csrftoken = '{{ csrf_token }}';
+            checked = document.getElementById(`checkbox_${pk}_query`).checked
+            fetch(url, {
+                method: "PATCH",
+                body: JSON.stringify({
+                    pk: pk,
+                    checked: checked,
+                }),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                    "X-CSRFToken": csrftoken,
+                }
+            })
+        }
+    </script>
 {% endblock %}

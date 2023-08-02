@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 # просто хранит все nmid для создания отчетов
 class NmidToBeReported(models.Model):
 
@@ -60,21 +59,25 @@ class IndexerReportData(models.Model):
         verbose_name_plural = 'IndexerReportsData'
 
 
+############################# SEO COLLECTOR #########################################
+
 class SeoReport(models.Model):
     """Модель представления запроса по query и глубине depth"""
     query = models.CharField(max_length=255, verbose_name="Запрос")
     create_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     depth = models.IntegerField(verbose_name="Глубина")
     completed = models.BooleanField(default=False, verbose_name="Завершено")
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.CASCADE)
 
 
 class SeoReportData(models.Model):
     """Seo фразы"""
     nmid = models.IntegerField(verbose_name="ID товара")
     keywords = models.CharField(max_length=255, verbose_name="Фраза")
-    frequency = models.CharField(verbose_name="Частота")
+    frequency = models.IntegerField(verbose_name="Частота")
     req_depth = models.IntegerField(verbose_name="Глубина")
     top_category = models.CharField(verbose_name="Топ категория")
+    reference = models.BooleanField(default=False, verbose_name="Эталон")
 
     query = models.ForeignKey(
         SeoReport, 
@@ -84,5 +87,8 @@ class SeoReportData(models.Model):
     )
 
     class Meta:
+        ordering = ["pk"]
         verbose_name = "Сео данные"
         verbose_name_plural = "Сео данные"
+
+######################################################################################
